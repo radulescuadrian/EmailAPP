@@ -1,0 +1,73 @@
+package friends;
+
+import randStuff.dbConnection;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
+@WebServlet(name = "getUsers", urlPatterns = {"/getUsers"})
+public class getUsers extends HttpServlet {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String username = request.getParameter("username");
+        dbConnection obj_dbconn = new dbConnection();
+        Connection conn = obj_dbconn.getConnection();
+        ResultSet rs = null;
+        PrintWriter out = response.getWriter();
+        ResultSet rscheck = null;
+        PreparedStatement pscheck = null;
+        try {
+            String query = "select username from users";
+            PreparedStatement ps = conn.prepareStatement(query);
+            rs = ps.executeQuery();
+            while(rs.next()) {
+                String queryCheck = "select status from friends where friend_one=? and friend_two=?";
+                pscheck = conn.prepareStatement(queryCheck);
+                pscheck.setString(1, username);
+                pscheck.setString(2, rs.getString(1));
+                rscheck = pscheck.executeQuery();
+                String queryCheck2 = "select status from friends where friend_one=? and friend_two=?";
+                PreparedStatement pscheck2 = conn.prepareStatement(queryCheck2);
+                pscheck2.setString(2, username);
+                pscheck2.setString(1, rs.getString(1));
+                ResultSet rscheck2 = pscheck2.executeQuery();
+                if(!rs.getString(1).equals(username) && (!rscheck.next() || rscheck.getString(1)=="2"))
+                {
+                    out.println("<tr>");
+                    out.println("<td class=\"FR\"><p style=\"padding: 10px 0px; margin-bottom: 0px;\">"+rs.getString(1)+"</p></td>");
+                    out.println("<td>");
+                    if(rscheck2.next() && rscheck2.getString(1)=="1") {
+                        out.println("<p style=\"margin: 0px 10px; color: green;\">cererea a fost trimisa</p>");
+                    }
+                    if(!rscheck.next() || rscheck.getString(1)=="0"){
+                        out.println("<button class=\"BUTON buttonn btn-success btn-sm\" style=\"margin: 0px 10px;\">adauga prieten</button>");
+                    }
+                    out.println("</td>");
+                    out.println("<td>");
+                    if(rscheck.next() && rscheck.getString(1)=="1") {
+                        out.println("<div id=\"mesaj\">cererea a fost trimisa</div>");
+                    }
+                    else {
+                        out.println("<div id=\"mesaj\"></div>");
+                    }
+                    out.println("</td>");
+                    out.println("</tr>");
+                }
+            }
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        doPost(request, response);
+    }
+}
